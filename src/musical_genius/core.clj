@@ -2,7 +2,7 @@
 
 (def what-key
   "Set the key of your music generator"
-  :c#)
+  :f#)
 
 (def notes
   '(:c :c# :d :d# :e :f :f# :g :g# :a :a# :b))
@@ -178,4 +178,4 @@
       (recur (repeatedly population-size #(make-child population))
              (inc generation)))))
 
-(def example-individual (new-individual))
+#_(run 100 50)
