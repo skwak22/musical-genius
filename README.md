@@ -1,10 +1,10 @@
 # musical-genius
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure-based music notation generator. To be used with EDNA/ALDA.
 
 ## Usage
 
-FIXME
+#_(run 100 50)
 
 ## License
 
