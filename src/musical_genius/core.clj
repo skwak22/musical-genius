@@ -7,10 +7,10 @@
   '(:c :c# :d :d# :e :f :f# :g :g# :a :a# :b))
 
 (def note-map
-  {1 :c, 2 :c#, 3 :d, 4 :d#, 5 :e, 6 :f, 7 :f#, 8 :g, 9 :g#, 10 :a, 11 :a#, 12 :b})
+  {0 :r, 1 :c, 2 :c#, 3 :d, 4 :d#, 5 :e, 6 :f, 7 :f#, 8 :g, 9 :g#, 10 :a, 11 :a#, 12 :b})
 
 (def note-vals
-  {:c 1, :c# 2, :d 3, :d# 4, :e 5, :f 6, :f# 7, :g 8, :g# 9, :a 10, :a# 11, :b 12})
+  {:r 0 :c 1, :c# 2, :d 3, :d# 4, :e 5, :f 6, :f# 7, :g 8, :g# 9, :a 10, :a# 11, :b 12})
 
 (def major-scale
   "Modify the mode accordingly"
@@ -20,6 +20,15 @@
 (defn rotate [v n]
   (let [cv (count v), n (mod n cv)]
     (concat (subvec v n cv) (subvec v 0 n))))
+
+(defn abs [n]
+  (if (< n 0)
+    (* -1 n)
+    n))
+
+(defn carry-note [n]
+  (if (< n 0) (+ n 12)
+    n))
 
 (defn map-key-sig [root]
   "Rotate the major scale to fit the key
@@ -76,16 +85,37 @@
   (/ (+ (+ (note-fitness n) (trait-fitness l))
         (trait-fitness p)) (count l)))
 
+(defn create-genome [l n p]
+  (mapv #(vector %1 %2 %3) l p n))
+
 (defn new-individual []
   (let [l (generate-lengths 8)
         n (generate-notes (count l))
         p (generate-pitch (count l))]
-    {:lengths     l
+    {:genome      (create-genome l n p)
+     :lengths     l
      :notes       n
      :pitches     p
      :final-notes (mapv #(translate-notes %1 %2 %3) l n p)
      :fitness     (double (fitness l n p))}))
 
 
+(defn mutate-note [gene]
+  (if (< (rand) 0.15) (assoc gene 2 (note-map (mod (carry-note (+ (rand-nth (range -2 3)) (note-vals (nth gene 2)))) 13)))
+                      gene))
+
+(defn mutate-length [gene]
+  gene)
+
+(defn mutate-pitch [gene]
+  gene)
+
+(defn mutate [genome]
+  (let [chance (rand)]
+    (cond
+      (>= chance 1) (map #(mutate-length %1) genome)
+      (>= chance 1) (map #(mutate-pitch %1) genome)
+      (>= chance 0) (map #(mutate-note %1) genome)
+      :else genome)))
 
 (def example-individual (new-individual))
