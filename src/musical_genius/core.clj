@@ -1,8 +1,13 @@
-(ns musical-genius.core)
+(ns musical-genius.core
+  )
 
 (def what-key
   "Set the key of your music generator"
-  :f#)
+  :c#)
+
+(def tempo 100)
+
+(def instrument :piano)
 
 (def notes
   '(:c :c# :d :d# :e :f :f# :g :g# :a :a# :b))
@@ -78,14 +83,16 @@
   (str length " " pitch note " "))
 
 (def fitness-vals
-  {1/4 10, 1/8 6, 1/2 6, 1 4, 1/16 4, 3/8 2, 5/8 2,
+  {1/4 0, 1/8 0, 1/2 0, 1 0, 1/16 0, 3/8 0, 5/8 0,
    ""  8, "-" 4, "+" 4, "-2" 2, "+2" 2,
    })
 
 (defn trait-fitness [pitch]
-  (reduce + (let [pitch-freq (frequencies pitch)]
+  (try
+    (reduce + (let [pitch-freq (frequencies pitch)]
               (map (fn [x]
-                     (* (fitness-vals (first x)) (second x))) pitch-freq))))
+                     (* (fitness-vals (first x)) (second x))) pitch-freq)))
+    (catch Exception e (do (println "Something went wrong. Please try again.")))))
 
 (def key-sig (map-key-sig what-key))
 
@@ -98,14 +105,16 @@
   (reduce + (map #(note-in-key %1) note)))
 
 (defn fitness [l n p]
-  (/ (+ (+ (note-fitness n) (trait-fitness l))
+  (/ (+
+       ;(+
+          (note-fitness n) ;(trait-fitness l))
         (trait-fitness p)) (count l)))
 
 (defn create-genome [l n p]
   (mapv #(vector %1 %2 %3) l p n))
 
 (defn new-individual []
-  (let [l (generate-lengths 8)
+  (let [l (generate-lengths 100)
         n (generate-notes (count l))
         p (generate-pitch (count l))]
     {:genome      (create-genome l n p)
@@ -116,7 +125,7 @@
      :fitness     (double (fitness l n p))}))
 
 (defn mutate-note [gene]
-  (if (< (rand) 0.15) (assoc gene 2 (note-map (mod (carry-note (+ (rand-nth (range -2 3)) (note-vals (nth gene 2)))) 13)))
+  (if (< (rand) 0.05) (assoc gene 2 (note-map (mod (carry-note (+ (rand-nth (range -2 3)) (note-vals (nth gene 2)))) 13)))
                       gene))
 
 (defn mutate-length [gene]
@@ -127,15 +136,15 @@
   [1/4 "" :d])
 
 (defn mutate-pitch [gene]
-  (if (< (rand) 0.95) (assoc gene 1 (pitch-map (mod (carry-pitch (+ (rand-nth (range -1 2)) (pitch-vals (second gene)))) 5)))
+  (if (< (rand) 0.05) (assoc gene 1 (pitch-map (mod (carry-pitch (+ (rand-nth (range -1 2)) (pitch-vals (second gene)))) 5)))
                       gene))
 
 (defn mutate [genome]
   (let [chance (rand)]
     (cond
       (>= chance 1) (map #(mutate-length %1) genome)
-      (>= chance 0.5) (map #(mutate-pitch %1) genome)
-      (>= chance 0) (map #(mutate-note %1) genome)
+      (>= chance 0.66) (map #(mutate-pitch %1) genome)
+      (>= chance 0.33) (map #(mutate-note %1) genome)
       :else genome)))
 
 (defn best [individuals]
@@ -178,4 +187,4 @@
       (recur (repeatedly population-size #(make-child population))
              (inc generation)))))
 
-#_(run 100 50)
+#_(run 100 50000)
