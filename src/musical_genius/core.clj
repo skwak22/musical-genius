@@ -45,11 +45,11 @@
 
 (defn carry-note [n]
   (if (< n 0) (+ n 13)
-    n))
+      n))
 
 (defn carry-pitch [n]
   (if (< n 0) (+ n 5)
-              n))
+      n))
 
 (defn map-key-sig [root]
   "Rotate the major scale to fit the key
@@ -62,7 +62,7 @@
   '("+2" "+" "+" "+" "" "" "" "" "" "" "" "" "" "" "" "" "-" "-" "-" "-2"))
 
 (def length
-  '("1/16" "1/8" "1/4" "1/2" "1"))
+  '("1/16" "1/8" "1/4" "1/2" "1" "3/16" "3/8" "3/4" "3/2" "3"))
 
 (def smallest-value "1/" 8)
 
@@ -70,8 +70,7 @@
   (sort (take num (repeatedly #(rand-int num)))))
 
 (defn generate-lengths [num]
-  (let [template (measure-template num)]
-    (mapv #(/ (second %1) num) (frequencies template))))
+  (vec (take num (repeatedly #(rand-nth length)))))
 
 (defn generate-notes [num]
   (vec (take num (repeatedly #(rand-nth notes)))))
@@ -84,14 +83,13 @@
 
 (def fitness-vals
   {1/4 0, 1/8 0, 1/2 0, 1 0, 1/16 0, 3/8 0, 5/8 0,
-   ""  8, "-" 4, "+" 4, "-2" 2, "+2" 2,
-   })
+   ""  8, "-" 4, "+" 4, "-2" 2, "+2" 2})
 
 (defn trait-fitness [pitch]
   (try
     (reduce + (let [pitch-freq (frequencies pitch)]
-              (map (fn [x]
-                     (* (fitness-vals (first x)) (second x))) pitch-freq)))
+                (map (fn [x]
+                       (* (fitness-vals (first x)) (second x))) pitch-freq)))
     (catch Exception e (do (println "Something went wrong. Please try again.")))))
 
 (def key-sig (map-key-sig what-key))
@@ -107,8 +105,8 @@
 (defn fitness [l n p]
   (/ (+
        ;(+
-          (note-fitness n) ;(trait-fitness l))
-        (trait-fitness p)) (count l)))
+      (note-fitness n) ;(trait-fitness l))
+      (trait-fitness p)) (count l)))
 
 (defn create-genome [l n p]
   (mapv #(vector %1 %2 %3) l p n))
@@ -126,7 +124,7 @@
 
 (defn mutate-note [gene]
   (if (< (rand) 0.05) (assoc gene 2 (note-map (mod (carry-note (+ (rand-nth (range -2 3)) (note-vals (nth gene 2)))) 13)))
-                      gene))
+      gene))
 
 (defn mutate-length [gene]
 
@@ -137,7 +135,7 @@
 
 (defn mutate-pitch [gene]
   (if (< (rand) 0.05) (assoc gene 1 (pitch-map (mod (carry-pitch (+ (rand-nth (range -1 2)) (pitch-vals (second gene)))) 5)))
-                      gene))
+      gene))
 
 (defn mutate [genome]
   (let [chance (rand)]
@@ -169,8 +167,7 @@
      :notes n
      :pitches p
      :final-notes (mapv #(translate-notes %1 %2 %3) l n p)
-     :fitness (double (fitness l n p))}
-    ))
+     :fitness (double (fitness l n p))}))
 
 (defn report [generation population]
   (let [current-best (best population)]
@@ -187,4 +184,16 @@
       (recur (repeatedly population-size #(make-child population))
              (inc generation)))))
 
-#_(run 100 50000)
+(defn note-to-ascii [note]
+  (let [[length pitch note-name] (clojure.string/split note #" ")]
+    (str (format "%-5s" length) (format "%-3s" pitch) (format "%-3s" note-name))))
+
+(defn pretty-print-notes [final-notes]
+  (println "Length Pitch Note")
+  (println "-----------------")
+  (doseq [note final-notes]
+    (println (note-to-ascii note))))
+
+#_(let [final-population (run 100 500)
+        final-notes (:final-notes final-population)]
+    (pretty-print-notes final-notes))
